@@ -1,11 +1,11 @@
-package main
+package application
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
-	"/Users/senya/Desktop/go-course-first-sprint/pkg/calculator"
+	"github.com/MCtop4ik/go-first-sprint/pkg/calculator"
 )
 
 type RequestBody struct {
@@ -13,7 +13,7 @@ type RequestBody struct {
 }
 
 type SuccessResponse struct {
-	Result string `json:"result"`
+	Result float64 `json:"result"`
 }
 
 type ErrorResponse struct {
@@ -57,13 +57,12 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(SuccessResponse{Result: result})
 }
 
-// Функция calc - заглушка, предполагается, что она реализована где-то в другом месте
-func calc(expression string) (string, error) {
+func calc(expression string) (float64, error) {
 	answer, err := calculator.Calc(expression)
 	return answer, err
 }
 
-func main() {
+func RunServer() {
 	http.HandleFunc("/api/v1/calculate", calculateHandler)
 
 	fmt.Println("Сервер запущен на http://localhost:8080")
