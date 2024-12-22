@@ -3,6 +3,8 @@
 2. ```git clone https://github.com/MCtop4ik/go-first-sprint.git```
 3. Перейдите в папку проекта и запустите через ```go run cmd/main.go```
 
+### Проект запускается на ```localhost:8080```
+
 ### Эндпоинт
 
 ```
