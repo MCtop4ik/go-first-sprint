@@ -100,7 +100,7 @@ POST /api/v1/calculate
 }
 ```
 ### Неправильные запросы
-**Деление на ноль
+**Деление на ноль**
 ```
 {
     "expression": "(2+2)*3/0"
@@ -111,7 +111,7 @@ POST /api/v1/calculate
     "error": "Expression is not valid"
 }
 ```
-**Не закрытая скобка
+**Не закрытая скобка**
 ```
 {
     "expression": "(2+2*3"
@@ -122,7 +122,7 @@ POST /api/v1/calculate
     "error": "Expression is not valid"
 }
 ```
-**Буква в выражении
+**Буква в выражении**
 ```
 {
     "expression": "(2+2*3)*a"
@@ -133,7 +133,7 @@ POST /api/v1/calculate
     "error": "Expression is not valid"
 }
 ```
-**Неправильное тело запроса
+**Неправильное тело запроса**
 ```
 {
     "expression": "(2+2)*3/0
