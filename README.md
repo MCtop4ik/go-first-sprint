@@ -71,9 +71,70 @@ POST /api/v1/calculate
 
    ```json
    {
-     "error": "Invalid request body"
+     "error": "Invalid request body
    }
    ```
 
 ---
 Я проверял на Postman
+```
+{
+    "expression": "(2+2)*3"
+}
+```
+```
+{
+    "result": 12
+}
+```
+```
+{
+    "expression": "(2+2++3)"
+}
+```
+```
+{
+    "result": 7
+}
+```
+```
+{
+    "expression": "(2+2)*3/0"
+}
+```
+```
+{
+    "error": "Expression is not valid"
+}
+```
+
+```
+{
+    "expression": "(2+2)*3/0
+}
+```
+```
+{
+    "error": "Invalid request body"
+}
+```
+```
+{
+    "expression": "(2+2*3"
+}
+```
+```
+{
+    "error": "Expression is not valid"
+}
+```
+```
+{
+    "expression": "(2+2*3)a"
+}
+```
+```
+{
+    "error": "Expression is not valid"
+}
+```
