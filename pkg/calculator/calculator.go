@@ -118,7 +118,11 @@ func Calc(expression string) (float64, error) {
 				case '*':
 					res *= stringToFloat64(b)
 				case '/':
-					res /= stringToFloat64(b)
+					divisor := stringToFloat64(b)
+					if divisor == 0 {
+						return 0, fmt.Errorf("Деление на ноль невозможно")
+					}
+					res /= divisor
 				}
 			} else {
 				resflag = true

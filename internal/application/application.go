@@ -49,7 +49,7 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
 	result, err := calc(requestBody.Expression)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Error: "Internal server error"})
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Expression is not valid"})
 		return
 	}
 
