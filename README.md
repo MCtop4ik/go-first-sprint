@@ -77,6 +77,8 @@ POST /api/v1/calculate
 
 ---
 Я проверял на Postman
+
+### Полностью правильные запросы
 ```
 {
     "expression": "(2+2)*3"
@@ -97,6 +99,8 @@ POST /api/v1/calculate
     "result": 7
 }
 ```
+### Неправильные запросы
+**Деление на ноль
 ```
 {
     "expression": "(2+2)*3/0"
@@ -107,17 +111,7 @@ POST /api/v1/calculate
     "error": "Expression is not valid"
 }
 ```
-
-```
-{
-    "expression": "(2+2)*3/0
-}
-```
-```
-{
-    "error": "Invalid request body"
-}
-```
+**Не закрытая скобка
 ```
 {
     "expression": "(2+2*3"
@@ -128,13 +122,25 @@ POST /api/v1/calculate
     "error": "Expression is not valid"
 }
 ```
+**Буква в выражении
 ```
 {
-    "expression": "(2+2*3)a"
+    "expression": "(2+2*3)*a"
 }
 ```
 ```
 {
     "error": "Expression is not valid"
+}
+```
+**Неправильное тело запроса
+```
+{
+    "expression": "(2+2)*3/0
+}
+```
+```
+{
+    "error": "Invalid request body"
 }
 ```
