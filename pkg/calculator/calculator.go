@@ -1,132 +1,269 @@
 package calculator
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
-func stringToFloat64(str string) float64 {
-	res, err := strconv.ParseFloat(str, 64)
-	if err != nil {
-		return 0
-	}
-	return res
+type Expression interface {
+	toS() string
+	inspect() interface{}
+	isReducible() bool
+	reduce() Expression
 }
 
-func isSign(value rune) bool {
-	return value == '+' || value == '-' || value == '*' || value == '/'
+type Number struct {
+	value float64
+}
+
+func (n Number) toS() string {
+	return strconv.FormatFloat(n.value, 'f', 2, 64)
+}
+
+func (n Number) inspect() interface{} {
+	return n.value
+}
+
+func (n Number) isReducible() bool {
+	return false
+}
+
+func (n Number) reduce() Expression {
+	return n
+}
+
+type Add struct {
+	left, right Expression
+}
+
+func (a Add) toS() string {
+	return "(" + a.left.toS() + " + " + a.right.toS() + ")"
+}
+
+func (a Add) inspect() interface{} {
+	return a
+}
+
+func (a Add) isReducible() bool {
+	return true
+}
+
+func (a Add) reduce() Expression {
+	if a.left.isReducible() {
+		return Add{a.left.reduce(), a.right}
+	} else if a.right.isReducible() {
+		return Add{a.left, a.right.reduce()}
+	} else {
+		return Number{a.left.inspect().(float64) + a.right.inspect().(float64)}
+	}
+}
+
+type Subtract struct {
+	left, right Expression
+}
+
+func (s Subtract) toS() string {
+	return "(" + s.left.toS() + " - " + s.right.toS() + ")"
+}
+
+func (s Subtract) inspect() interface{} {
+	return s
+}
+
+func (s Subtract) isReducible() bool {
+	return true
+}
+
+func (s Subtract) reduce() Expression {
+	if s.left.isReducible() {
+		return Subtract{s.left.reduce(), s.right}
+	} else if s.right.isReducible() {
+		return Subtract{s.left, s.right.reduce()}
+	} else {
+		return Number{s.left.inspect().(float64) - s.right.inspect().(float64)}
+	}
+}
+
+type Multiply struct {
+	left, right Expression
+}
+
+func (m Multiply) toS() string {
+	return "(" + m.left.toS() + " * " + m.right.toS() + ")"
+}
+
+func (m Multiply) inspect() interface{} {
+	return m
+}
+
+func (m Multiply) isReducible() bool {
+	return true
+}
+
+func (m Multiply) reduce() Expression {
+	if m.left.isReducible() {
+		return Multiply{m.left.reduce(), m.right}
+	} else if m.right.isReducible() {
+		return Multiply{m.left, m.right.reduce()}
+	} else {
+		return Number{m.left.inspect().(float64) * m.right.inspect().(float64)}
+	}
+}
+
+type Divide struct {
+	left, right Expression
+}
+
+func (d Divide) toS() string {
+	return "(" + d.left.toS() + " / " + d.right.toS() + ")"
+}
+
+func (d Divide) inspect() interface{} {
+	return d
+}
+
+func (d Divide) isReducible() bool {
+	return true
+}
+
+func (d Divide) reduce() Expression {
+	if d.left.isReducible() {
+		return Divide{d.left.reduce(), d.right}
+	} else if d.right.isReducible() {
+		return Divide{d.left, d.right.reduce()}
+	} else {
+		rightValue := d.right.inspect().(float64)
+		if rightValue == 0 {
+			panic("division by zero")
+		}
+		return Number{d.left.inspect().(float64) / rightValue}
+	}
+}
+
+type Machine struct {
+	expression Expression
+}
+
+func (m *Machine) step() {
+	m.expression = m.expression.reduce()
+}
+
+func (m *Machine) run() {
+	for m.expression.isReducible() {
+		m.step()
+	}
+}
+
+type Parser struct {
+	tokens []string
+	pos    int
+}
+
+func (p *Parser) parseExpression() (Expression, error) {
+	left, err := p.parseTerm()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.pos < len(p.tokens) && (p.tokens[p.pos] == "+" || p.tokens[p.pos] == "-") {
+		op := p.tokens[p.pos]
+		p.pos++
+		right, err := p.parseTerm()
+		if err != nil {
+			return nil, err
+		}
+		if op == "+" {
+			left = Add{left, right}
+		} else {
+			left = Subtract{left, right}
+		}
+	}
+	return left, nil
+}
+
+func (p *Parser) parseTerm() (Expression, error) {
+	left, err := p.parseFactor()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.pos < len(p.tokens) && (p.tokens[p.pos] == "*" || p.tokens[p.pos] == "/") {
+		op := p.tokens[p.pos]
+		p.pos++
+		right, err := p.parseFactor()
+		if err != nil {
+			return nil, err
+		}
+		if op == "*" {
+			left = Multiply{left, right}
+		} else {
+			left = Divide{left, right}
+		}
+	}
+	return left, nil
+}
+
+func (p *Parser) parseFactor() (Expression, error) {
+	if p.pos >= len(p.tokens) {
+		return nil, errors.New("unexpected end of expression")
+	}
+
+	if p.tokens[p.pos] == "(" {
+		p.pos++
+		exp, err := p.parseExpression()
+		if err != nil {
+			return nil, err
+		}
+		p.pos++
+		return exp, nil
+	}
+
+	val, err := strconv.ParseFloat(p.tokens[p.pos], 64)
+	if err != nil {
+		return nil, errors.New("invalid number: " + p.tokens[p.pos])
+	}
+	p.pos++
+	return Number{value: val}, nil
+}
+
+func tokenize(input string) []string {
+	var tokens []string
+	var sb strings.Builder
+
+	for _, r := range input {
+		if unicode.IsSpace(r) {
+			continue
+		}
+		if r == '(' || r == ')' || r == '+' || r == '-' || r == '*' || r == '/' {
+			if sb.Len() > 0 {
+				tokens = append(tokens, sb.String())
+				sb.Reset()
+			}
+			tokens = append(tokens, string(r))
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+
+	if sb.Len() > 0 {
+		tokens = append(tokens, sb.String())
+	}
+
+	return tokens
 }
 
 func Calc(expression string) (float64, error) {
-	expression = strings.ReplaceAll(expression, " ", "")
-	if len(expression) < 3 {
-		return 0, fmt.Errorf("Недостаточно символов для вычисления")
+	tokens := tokenize(expression)
+	parser := Parser{tokens: tokens, pos: 0}
+	input, err := parser.parseExpression()
+	if err != nil {
+		return 0, err
 	}
 
-	var res float64
-	var b string
-	var c rune = 0
-	var resflag bool = false
-	var isc int
-	var countc int = 0
+	machine := Machine{input}
+	machine.run()
 
-	for _, value := range expression {
-		if isSign(value) {
-			countc++
-		}
-	}
-
-	if isSign(rune(expression[0])) || isSign(rune(expression[len(expression)-1])) {
-		return 0, fmt.Errorf("Некорректное выражение")
-	}
-
-	for i, value := range expression {
-		if value == '(' {
-			isc = i
-		}
-		if value == ')' {
-			calc, err := Calc(expression[isc+1 : i])
-			if err != nil {
-				return 0, fmt.Errorf("Некорректное выражение")
-			}
-			calcstr := strconv.FormatFloat(calc, 'f', -1, 64)
-			i2 := i
-			i -= len(expression[isc:i+1]) - len(calcstr)
-			expression = strings.Replace(expression, expression[isc:i2+1], calcstr, 1)
-		}
-	}
-
-	if countc > 1 {
-		for i := 1; i < len(expression); i++ {
-			value := rune(expression[i])
-
-			if value == '*' || value == '/' {
-				var imin int = i - 1
-				if imin != 0 {
-					for !isSign(rune(expression[imin])) && imin > 0 {
-						imin--
-					}
-					imin++
-				}
-				var imax int = i + 1
-				if imax == len(expression) {
-					imax--
-				} else {
-					for !isSign(rune(expression[imax])) && imax < len(expression)-1 {
-						imax++
-					}
-				}
-				if imax == len(expression)-1 {
-					imax++
-				}
-				calc, err := Calc(expression[imin:imax])
-				if err != nil {
-					return 0, fmt.Errorf("Некорректное выражение")
-				}
-				calcstr := strconv.FormatFloat(calc, 'f', -1, 64)
-				i -= len(expression[isc:i+1]) - len(calcstr) - 1
-				expression = strings.Replace(expression, expression[imin:imax], calcstr, 1)
-			}
-			if value == '+' || value == '-' || value == '*' || value == '/' {
-				c = value
-			}
-		}
-	}
-
-	for _, value := range expression + "s" {
-		switch {
-		case value == ' ':
-			continue
-		case (value >= '0' && value <= '9') || value == '.':
-			b += string(value)
-		case isSign(value) || value == 's':
-			if resflag {
-				switch c {
-				case '+':
-					res += stringToFloat64(b)
-				case '-':
-					res -= stringToFloat64(b)
-				case '*':
-					res *= stringToFloat64(b)
-				case '/':
-					divisor := stringToFloat64(b)
-					if divisor == 0 {
-						return 0, fmt.Errorf("Деление на ноль невозможно")
-					}
-					res /= divisor
-				}
-			} else {
-				resflag = true
-				res = stringToFloat64(b)
-			}
-			b = strings.ReplaceAll(b, b, "")
-			c = value
-
-		case value == 's':
-		default:
-			return 0, fmt.Errorf("Некорректный ввод")
-		}
-	}
-	return res, nil
+	return machine.expression.inspect().(float64), nil
 }

@@ -57,9 +57,19 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(SuccessResponse{Result: result})
 }
 
-func calc(expression string) (float64, error) {
+func calc(expression string) (result float64, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("internal server error: %v", r)
+		}
+	}()
+
 	answer, err := calculator.Calc(expression)
-	return answer, err
+	if err != nil {
+		return 0, err
+	}
+
+	return answer, nil
 }
 
 func RunServer() {
