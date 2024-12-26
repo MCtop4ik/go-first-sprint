@@ -95,7 +95,6 @@ func Calc(expression string) (float64, error) {
 	}
 
 	for _, value := range expression + "s" {
-		fmt.Println(string(value))
 		switch {
 		case value == ' ':
 			continue
