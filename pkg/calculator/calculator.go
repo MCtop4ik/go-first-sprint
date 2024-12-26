@@ -19,6 +19,7 @@ func isSign(value rune) bool {
 }
 
 func Calc(expression string) (float64, error) {
+	expression = strings.ReplaceAll(expression, " ", "")
 	if len(expression) < 3 {
 		return 0, fmt.Errorf("Недостаточно символов для вычисления")
 	}
@@ -94,12 +95,13 @@ func Calc(expression string) (float64, error) {
 	}
 
 	for _, value := range expression + "s" {
+		fmt.Println(string(value))
 		switch {
 		case value == ' ':
 			continue
-		case (value >= '0' && value <= '9') || value == '.': // Если это цифра или точка
+		case (value >= '0' && value <= '9') || value == '.':
 			b += string(value)
-		case isSign(value) || value == 's': // Если это знак
+		case isSign(value) || value == 's':
 			if resflag {
 				switch c {
 				case '+':
